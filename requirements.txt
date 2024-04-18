@@ -1,0 +1,12 @@
+streamlit
+langchain
+langgraph
+chromadb
+tiktoken
+html2text 
+beautifulsoup4
+lxml
+unstructured
+langchain-community
+sentence-transformers
+langchainhub
