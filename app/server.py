@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -5,16 +6,28 @@ import streamlit as st
 from chain.rag_graph import ask_question, make_rag_chain
 from data_processing.preprocess import crear_documentos
 from data_processing.vector_database import create_vector_db
+from dotenv import load_dotenv
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from unstructured.cleaners.core import clean_extra_whitespace
 
-st.set_page_config(page_title="Advanced RAG Hackathon - Medify")
-st.title("Advanced RAG Hackathon - Medify")
-
+load_dotenv()
 
 TMP_DIR = Path(__file__).resolve().parent.joinpath("data", "tmp")
+
+if not TMP_DIR.exists():
+    TMP_DIR.mkdir(parents=True)
+
+LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2")
+LANGCHAIN_ENDPOINT = os.getenv("LANGCHAIN_ENDPOINT")
+LANGCHAIN_PROJECT = os.getenv("LANGCHAIN_PROJECT")
+LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+st.set_page_config(page_title="Advanced RAG Hackathon - Medify")
+st.title("Advanced RAG Hackathon - Medify")
 
 
 def load_documents(file_path):
