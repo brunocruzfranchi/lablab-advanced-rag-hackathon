@@ -4,10 +4,9 @@ from tempfile import NamedTemporaryFile
 
 import streamlit as st
 from chain.rag_graph import ask_question, make_rag_chain
-from data_processing.preprocess import crear_documentos
+from data_processing.preprocess import create_documents
 from data_processing.vector_database import create_vector_db
 from dotenv import load_dotenv
-from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import UnstructuredHTMLLoader
 from unstructured.cleaners.core import clean_extra_whitespace
@@ -42,6 +41,7 @@ def load_documents(file_path):
 
 
 def split_documents(docs):
+
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=450,
         chunk_overlap=10,
@@ -49,11 +49,13 @@ def split_documents(docs):
         is_separator_regex=False,
     )
 
-    contents = docs
+    contents = []
+    metadatas = []
 
-    if docs and isinstance(docs[0], Document):
-        contents = [doc.page_content for doc in docs]
-        metadatas = [doc.metadata for doc in docs]
+    for doc in docs:
+        for chunk in doc:
+            contents.append(chunk.page_content)
+            metadatas.append(chunk.metadata)
 
     texts = text_splitter.create_documents(contents, metadatas)
 
@@ -61,14 +63,12 @@ def split_documents(docs):
 
 
 def input_fields():
-
     st.session_state.source_docs = st.file_uploader(
         label="Upload Documents", type="html", accept_multiple_files=False
     )
 
 
 def process_documents():
-
     try:
         if st.session_state.source_docs is not None:
             with NamedTemporaryFile(
@@ -78,8 +78,8 @@ def process_documents():
                     bytes_data = st.session_state.source_docs.getvalue()
                     tmp_file.write(bytes_data)
                     tmp_path = tmp_file.name
-                except Exception:
-                    tmp_file.write(st.session_state.source_docs.read())
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
 
             documents = load_documents(tmp_path)
 
@@ -87,11 +87,13 @@ def process_documents():
                 temp_file = TMP_DIR.joinpath(_file)
                 temp_file.unlink()
 
-            texts = crear_documentos(documents[0].page_content)
+            texts = []
+
+            if documents:
+                for document in documents:
+                    texts.append(create_documents(document.page_content))
 
             texts = split_documents(texts)
-
-            st.write(texts)
 
             st.session_state.vector_db = create_vector_db(texts)
 
@@ -100,6 +102,19 @@ def process_documents():
 
 
 def main_streamlit():
+
+    with st.sidebar:
+        st.header("Configuration")
+
+        st.session_state.database = st.selectbox(
+            "Vector Database",
+            ("Vectara", "Chroma"),
+        )
+
+        st.session_state.model_provider = st.selectbox(
+            "LLM Provider",
+            ("Google Gemini", "TogetherAI"),
+        )
 
     input_fields()
 
