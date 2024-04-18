@@ -69,14 +69,14 @@ def build_rag_prompt(
     return template_prompt
 
 
-def make_rag_chain(vector_db, model="gemini-pro", rag_prompt=None):
+def make_rag_chain(vector_db, model="together", rag_prompt=None):
 
     if model == "gemini-pro":
         model = ChatGoogleGenerativeAI(model="gemini-pro")
         rag_prompt = build_rag_chat_prompt()
     elif model == "together":
         model = Together(
-            model="mistralai/Mistral-7B-Instruct-v0.2",
+            model="mistralai/Mistral-7B-Instruct-v0.1",
             temperature=0.0,
             max_tokens=512,
             together_api_key=TOGETHER_API_KEY,
@@ -85,7 +85,6 @@ def make_rag_chain(vector_db, model="gemini-pro", rag_prompt=None):
 
     retriever = vector_db.as_retriever(search_kwargs={"k": 6})
 
-    # And we will use the LangChain RunnablePassthrough to add some custom processing into our chain.
     rag_chain = (
         {
             "context": RunnableLambda(get_question) | retriever | format_docs,
