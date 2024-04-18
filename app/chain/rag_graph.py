@@ -6,6 +6,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import (
     ChatPromptTemplate,
     HumanMessagePromptTemplate,
+    PromptTemplate,
     SystemMessagePromptTemplate,
 )
 from langchain_core.runnables import RunnableLambda
@@ -14,7 +15,7 @@ from langchain_together import Together
 
 load_dotenv()
 
-TOGETHER_API_KEY = os.getenv("GOOGLE_API_KEY")
+TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 
 SYS_PROMPT_RAG = """Usted es un asistente para tareas de respuesta a preguntas. Utiliza los siguientes elementos del contexto recuperado para responder a la pregunta. Si no conoce la respuesta, diga simplemente que no la conoce. Utiliza tres frases como máximo y sé conciso en la respuesta."""
 USER_PROMPT_RAG = """Pregunta: {question}\nContexto: {context}"""
@@ -44,7 +45,7 @@ def ask_question(chain, query):
     return response
 
 
-def build_rag_prompt(
+def build_rag_chat_prompt(
     system_prompt=SYS_PROMPT_RAG, user_prompt=USER_PROMPT_RAG
 ):
     messages = [
@@ -57,10 +58,22 @@ def build_rag_prompt(
     return template_prompt
 
 
+def build_rag_prompt(
+    system_prompt=SYS_PROMPT_RAG, user_prompt=USER_PROMPT_RAG
+):
+
+    template = f"""{system_prompt}\n{user_prompt}\nRespuesta: """
+
+    template_prompt = PromptTemplate.from_template(template)
+
+    return template_prompt
+
+
 def make_rag_chain(vector_db, model="gemini-pro", rag_prompt=None):
 
     if model == "gemini-pro":
         model = ChatGoogleGenerativeAI(model="gemini-pro")
+        rag_prompt = build_rag_chat_prompt()
     elif model == "together":
         model = Together(
             model="mistralai/Mistral-7B-Instruct-v0.2",
@@ -68,10 +81,9 @@ def make_rag_chain(vector_db, model="gemini-pro", rag_prompt=None):
             max_tokens=512,
             together_api_key=TOGETHER_API_KEY,
         )
+        rag_prompt = build_rag_prompt()
 
     retriever = vector_db.as_retriever(search_kwargs={"k": 6})
-
-    rag_prompt = build_rag_prompt()
 
     # And we will use the LangChain RunnablePassthrough to add some custom processing into our chain.
     rag_chain = (
