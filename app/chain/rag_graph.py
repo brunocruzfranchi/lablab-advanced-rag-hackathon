@@ -11,8 +11,7 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda
 from langchain_google_genai import ChatGoogleGenerativeAI
-# from langchain_together import Together
-from langchain.llms import Together
+from langchain_together import Together
 
 load_dotenv()
 
@@ -21,8 +20,9 @@ TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 SYS_PROMPT_RAG = """Usted es un asistente médico y su función es responder a la pregunta basándose en el contexto dado, proveniente de la historia clínica de un paciente. Al responder la pregunta, utilice y cite elementos relevantes del contexto para justificar su respuesta. Si la información disponible es insuficiente para formular una respuesta informada, indique claramente que no se dispone de suficiente información para responder. Sea preciso y conciso."""
 USER_PROMPT_RAG = """Pregunta: {question}\n\n\nContexto:\n\n{context}"""
 
+
 def format_docs(docs):
-    return "\n\n".join(doc.page_content.replace('\n\n', '\n') for doc in docs)
+    return "\n\n".join(doc.page_content.replace("\n\n", "\n") for doc in docs)
 
 
 def get_question(input):
