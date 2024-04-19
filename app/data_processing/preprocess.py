@@ -96,7 +96,7 @@ def create_documents(text):
 
         docs.append(
             Document(
-                page_content=text_evolucion,
+                page_content= 'Fecha: ' + date + '\n' + text_evolucion,
                 metadata={
                     "date": date,
                     "professional": professional,

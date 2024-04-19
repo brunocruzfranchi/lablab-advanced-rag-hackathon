@@ -36,6 +36,8 @@ def load_documents(file_path):
     )
 
     documents = loader.load()
+    for document in documents:
+        print(document)
 
     return documents
 
@@ -117,6 +119,14 @@ def main_streamlit():
             "LLM Provider",
             ("Google Gemini", "TogetherAI"),
         )
+
+        if st.session_state.model_provider == "TogetherAI":
+            st.session_state.model = st.selectbox(
+                "Model",
+                ("Llama-3", "Mistral-7B"),
+            )
+        else:
+            st.session_state.model = "gemini-pro"
 
         if st.session_state.model_provider == "TogetherAI":
             st.session_state.model = st.selectbox(

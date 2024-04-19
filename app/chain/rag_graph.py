@@ -11,18 +11,18 @@ from langchain_core.prompts import (
 )
 from langchain_core.runnables import RunnableLambda
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_together import Together
+# from langchain_together import Together
+from langchain.llms import Together
 
 load_dotenv()
 
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 
-SYS_PROMPT_RAG = """Usted es un asistente para tareas de respuesta a preguntas. Utiliza los siguientes elementos del contexto recuperado para responder a la pregunta. Si no conoce la respuesta, diga simplemente que no la conoce. Utiliza tres frases como máximo y sé conciso en la respuesta."""
-USER_PROMPT_RAG = """Pregunta: {question}\nContexto: {context}"""
-
+SYS_PROMPT_RAG = """Usted es un asistente médico y su función es responder a la pregunta basándose en el contexto dado, proveniente de la historia clínica de un paciente. Al responder la pregunta, utilice y cite elementos relevantes del contexto para justificar su respuesta. Si la información disponible es insuficiente para formular una respuesta informada, indique claramente que no se dispone de suficiente información para responder. Sea preciso y conciso."""
+USER_PROMPT_RAG = """Pregunta: {question}\n\n\nContexto:\n\n{context}"""
 
 def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+    return "\n\n".join(doc.page_content.replace('\n\n', '\n') for doc in docs)
 
 
 def get_question(input):
@@ -62,21 +62,25 @@ def build_rag_prompt(
     system_prompt=SYS_PROMPT_RAG, user_prompt=USER_PROMPT_RAG
 ):
 
-    template = f"""{system_prompt}\n{user_prompt}\nRespuesta: """
+    template = f"""{system_prompt}\n\n\n{user_prompt}\n\n\nRespuesta: """
 
     template_prompt = PromptTemplate.from_template(template)
 
     return template_prompt
 
 
-def make_rag_chain(vector_db, model="together", rag_prompt=None):
+def make_rag_chain(vector_db, model="gemini-pro", rag_prompt=None):
 
     if model == "gemini-pro":
-        model = ChatGoogleGenerativeAI(model="gemini-pro")
+        model = ChatGoogleGenerativeAI(model=model)
         rag_prompt = build_rag_chat_prompt()
-    elif model == "together":
+    else:
+        if model == "Llama-3":
+            model_name = "meta-llama/Llama-3-70b-chat-hf"
+        else:
+            model_name = "mistralai/Mistral-7B-Instruct-v0.1"
         model = Together(
-            model="mistralai/Mistral-7B-Instruct-v0.1",
+            model=model_name,
             temperature=0.0,
             max_tokens=512,
             together_api_key=TOGETHER_API_KEY,
