@@ -36,6 +36,8 @@ def load_documents(file_path):
     )
 
     documents = loader.load()
+    for document in documents:
+        print(document)
 
     return documents
 
@@ -115,6 +117,14 @@ def main_streamlit():
             "LLM Provider",
             ("Google Gemini", "TogetherAI"),
         )
+        
+        if st.session_state.model_provider == "TogetherAI":
+            st.session_state.model = st.selectbox(
+                "Model",
+                ("Llama-3", "Mistral-7B"),
+            )
+        else:
+            st.session_state.model = "gemini-pro"
 
     input_fields()
 
@@ -129,7 +139,7 @@ def main_streamlit():
 
     if query := st.chat_input():
         st.chat_message("human").write(query)
-        chain = make_rag_chain(st.session_state.vector_db)
+        chain = make_rag_chain(st.session_state.vector_db, model=st.session_state.model)
         response = ask_question(chain, query)
         st.chat_message("ai").write(response)
 
