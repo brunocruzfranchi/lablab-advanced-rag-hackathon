@@ -1,11 +1,19 @@
+import json
 import os
 import shutil
 from time import sleep
 from typing import List
 
-from langchain_community.vectorstores import Chroma
+import requests
+from langchain_community.embeddings.fake import FakeEmbeddings
+from langchain_community.vectorstores import Chroma, Vectara
 
 EMBED_DELAY = 0.02  # 20 milliseconds
+
+VECTARA_CUSTOMER_ID = os.getenv("VECTARA_CUSTOMER_ID")
+VECTARA_CORPUS_ID = os.getenv("VECTARA_CORPUS_ID")
+VECTARA_API_KEY = os.getenv("VECTARA_API_KEY")
+VECTARA_AUTH_TOKEN = os.getenv("VECTARA_AUTH_TOKEN")
 
 
 class EmbeddingProxy:
@@ -21,15 +29,48 @@ class EmbeddingProxy:
         return self.embedding.embed_query(text)
 
 
-def create_vector_db(texts, embeddings=None, collection_name="chroma"):
+def reset_vectara_corpus(auth_api_key: str, customer_id: int, corpus_id: int):
 
-    if not embeddings:
+    url = "https://api.vectara.io/v1/reset-corpus"
 
-        from langchain_community.embeddings import HuggingFaceEmbeddings
+    payload = json.dumps({"corpusId": corpus_id})
 
-        embeddings = HuggingFaceEmbeddings(
-            model_name="hackathon-pln-es/paraphrase-spanish-distilroberta"
-        )
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "customer-id": f"{customer_id}",
+        "x-api-key": f"{auth_api_key}",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    return response
+
+
+def create_vectara_db(texts):
+
+    vector_db = Vectara(
+        vectara_customer_id=VECTARA_CUSTOMER_ID,
+        vectara_corpus_id=VECTARA_CORPUS_ID,
+        vectara_api_key=VECTARA_API_KEY,
+    )
+
+    reset_vectara_corpus(
+        VECTARA_AUTH_TOKEN, VECTARA_CUSTOMER_ID, VECTARA_CORPUS_ID
+    )
+
+    vector_db.from_documents(texts, FakeEmbeddings(size=768))
+
+    return vector_db
+
+
+def create_chroma_db(texts, collection_name="chroma"):
+
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+
+    embeddings = HuggingFaceEmbeddings(
+        model_name="hackathon-pln-es/paraphrase-spanish-distilroberta"
+    )
 
     proxy_embeddings = EmbeddingProxy(embeddings)
 
@@ -46,5 +87,15 @@ def create_vector_db(texts, embeddings=None, collection_name="chroma"):
     )
 
     db.persist()
+
+    return db
+
+
+def create_vector_db(texts, vector_db="chroma"):
+
+    if vector_db == "chroma":
+        db = create_chroma_db(texts)
+    elif vector_db == "vectara":
+        db = create_vectara_db(texts)
 
     return db
