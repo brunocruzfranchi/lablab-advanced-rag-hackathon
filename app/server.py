@@ -97,7 +97,9 @@ def process_documents():
 
             texts = split_documents(texts)
 
-            st.session_state.vector_db = create_vector_db(texts)
+            st.session_state.vector_db = create_vector_db(
+                texts, st.session_state.database
+            )
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
@@ -110,7 +112,7 @@ def main_streamlit():
 
         st.session_state.database = st.selectbox(
             "Vector Database",
-            ("Vectara", "Chroma"),
+            ("vectara", "chroma"),
         )
 
         st.session_state.model_provider = st.selectbox(

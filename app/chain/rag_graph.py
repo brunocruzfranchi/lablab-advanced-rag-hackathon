@@ -87,7 +87,7 @@ def make_rag_chain(vector_db, model="gemini-pro", rag_prompt=None):
         )
         rag_prompt = build_rag_prompt()
 
-    retriever = vector_db.as_retriever(search_kwargs={"k": 6})
+    retriever = vector_db.as_retriever(search_kwargs={"k": 3})
 
     rag_chain = (
         {
